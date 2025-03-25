@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Infra\master.cpp" />
+    <ClCompile Include="Infra\trimmer.cc">
+      <Filter>Infra\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Infra\WMI.cc">
+      <Filter>Infra\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Infra\CPU.cc">
+      <Filter>Infra\Core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Infra\CPU.h">
+      <Filter>Infra\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Infra\WMI.h">
+      <Filter>Infra\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Infra\trimmer.h">
+      <Filter>Infra\Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Infra">
+      <UniqueIdentifier>{ec19053b-9be8-48e0-9cef-1c91654299c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Infra\Core">
+      <UniqueIdentifier>{9b16b449-cd48-4d68-a47e-4e8744ce0ca0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Infra\Header">
+      <UniqueIdentifier>{70c28c59-97d0-4a6e-8221-b388d555af6d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
