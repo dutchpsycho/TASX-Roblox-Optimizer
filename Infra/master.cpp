@@ -4,12 +4,16 @@
 
 #include <windows.h>
 #include <tlhelp32.h>
+#include <psapi.h>
 
 #include <iostream>
 #include <string>
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+
+std::unordered_map<DWORD, std::thread> g_trimmerThreads;
+std::unordered_map<DWORD, std::atomic<bool>> g_trimmerStates;
 
 static std::mutex g_mutex;
 static std::unordered_map<DWORD, HANDLE> g_rbxHandles;
@@ -46,7 +50,7 @@ void MonNew()
     {
         if (g_rbxHandles.contains(pid)) continue;
 
-        HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_SET_QUOTA | PROCESS_SET_INFORMATION, FALSE, pid);
+        HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_SET_QUOTA | PROCESS_SET_INFORMATION | PROCESS_TERMINATE, FALSE, pid);
         if (!hProc) {
             std::cerr << "[TASX] Failed to open PID " << pid << std::endl;
             continue;
@@ -55,9 +59,9 @@ void MonNew()
         g_rbxHandles[pid] = hProc;
         std::cout << "[TASX] New Roblox instance PID " << pid << " hooked." << std::endl;
 
+        // kill crash handler
         std::thread([] {
             Sleep(2000);
-
             HANDLE hSnapCrash = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
             if (hSnapCrash != INVALID_HANDLE_VALUE)
             {
@@ -84,17 +88,35 @@ void MonNew()
             }
             }).detach();
 
-        std::thread([pid, hProc]() {
-            if (StartTrimmer(hProc))
-                std::cout << "[TASX] Trimmer started for PID " << pid << std::endl;
-            else
-                std::cerr << "[TASX] Trimmer failed for PID " << pid << std::endl;
+        // per-client trimming & cpu
+        g_trimmerStates[pid] = true;
+        g_trimmerThreads[pid] = std::thread([pid, hProc]() {
+            std::wcout << L"[Trimmer] Starting trim for PID " << pid << std::endl;
 
+            while (g_trimmerStates[pid])
+            {
+                SetProcessWorkingSetSize(hProc, -1, -1);
+                EmptyWorkingSet(hProc);
+
+                PROCESS_MEMORY_COUNTERS_EX mem{};
+                if (GetProcessMemoryInfo(hProc, (PROCESS_MEMORY_COUNTERS*)&mem, sizeof(mem)))
+                {
+                    std::wcout << L"[Trimmer] PID " << pid << L" WS: " << (mem.WorkingSetSize / 1024)
+                        << L" KB | Private: " << (mem.PrivateUsage / 1024) << L" KB" << std::endl;
+                }
+
+                std::this_thread::sleep_for(std::chrono::seconds(15));
+            }
+
+            std::wcout << L"[Trimmer] PID " << pid << L" trim loop exited." << std::endl;
+            });
+
+        // cpu limiter
+        std::thread([pid, hProc]() {
             if (ApplyCPULimits(hProc))
                 std::cout << "[TASX] CPU limits applied for PID " << pid << std::endl;
             else
                 std::cerr << "[TASX] CPU limit failed for PID " << pid << std::endl;
-
             }).detach();
     }
 }
@@ -107,9 +129,20 @@ void CleanupExited()
         DWORD code = 0;
         if (GetExitCodeProcess(it->second, &code) && code != STILL_ACTIVE)
         {
-            std::cout << "[TASX] Roblox PID " << it->first << " exited." << std::endl;
+            DWORD pid = it->first;
+            std::cout << "[TASX] Roblox PID " << pid << " exited." << std::endl;
 
-            StopTrimmer();
+            // stop per-process trimmer
+            if (g_trimmerStates.contains(pid))
+            {
+                g_trimmerStates[pid] = false;
+                if (g_trimmerThreads[pid].joinable())
+                    g_trimmerThreads[pid].join();
+
+                g_trimmerThreads.erase(pid);
+                g_trimmerStates.erase(pid);
+            }
+
             CloseHandle(it->second);
             it = g_rbxHandles.erase(it);
         }

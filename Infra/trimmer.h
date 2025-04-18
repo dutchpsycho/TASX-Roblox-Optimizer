@@ -1,12 +1,11 @@
 #ifndef TRIMMER_H
 #define TRIMMER_H
 
-#include <windows.h>
-#include <atomic>
-#include <thread>
+#pragma once
+#include <Windows.h>
 
-bool StartTrimmer(HANDLE processHandle);
-
-void StopTrimmer();
+bool StartTrimmer(DWORD pid, HANDLE processHandle);
+void StopTrimmer(DWORD pid);
+void StopAllTrimmers();
 
 #endif
