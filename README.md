@@ -8,7 +8,7 @@ TASX is console-less, when you run it it'll dissapear. I'd reccomend putting it 
 
 ## How do I use this?
 
-For non-programmers, head over to the [TITAN Discord](https://titansoftwork.net/) & download the precompiled binary (This comes with source), to add it to startup run ``Windows + R`` & type ``shell:startup``, then drag ``TASX.exe`` in there.
+For non-programmers, head over to the [TITAN Discord](https://hub.titansoftwork.net/) & download the precompiled binary (This comes with source), to add it to startup run ``Windows + R`` & type ``shell:startup``, then drag ``TASX.exe`` in there.
 
 For programmers, open the solution file & compile as debug/release (no difference).
 
